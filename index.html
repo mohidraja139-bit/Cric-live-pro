@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CricLive Pro</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #141b2d;
+            --bg-card: #1e2746;
+            --bg-hover: #2a3655;
+            --text-primary: #ffffff;
+            --text-secondary: #8b92a8;
+            --accent-primary: #00d084;
+            --accent-secondary: #3b82f6;
+            --accent-danger: #ff4757;
+            --accent-warning: #ffa502;
+            --border-color: #2a3655;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.4);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        }
+
+        .login-container {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 3rem;
+            width: 100%;
+            max-width: 450px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 30px rgba(0, 208, 132, 0.3);
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .authorized-email {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .authorized-email i {
+            color: var(--accent-primary);
+            margin-right: 0.5rem;
+        }
+
+        .authorized-email strong {
+            color: var(--accent-primary);
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.9375rem;
+        }
+
+        .google-btn {
+            width: 100%;
+            background: #ffffff;
+            color: #333;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+        }
+
+        .google-btn i {
+            color: #4285F4;
+            font-size: 1.25rem;
+        }
+
+        .google-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .login-error.show {
+            display: flex;
+        }
+
+        .login-error i {
+            font-size: 1.25rem;
+        }
+
+        .security-note {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .security-note i {
+            color: var(--accent-primary);
+            margin-right: 0.5rem;
+        }
+
+        /* Access Denied Screen */
+        .access-denied {
+            display: none;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .access-denied.show {
+            display: flex;
+        }
+
+        .denied-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 71, 87, 0.1);
+            border: 2px solid var(--accent-danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--accent-danger);
+            margin: 0 auto 1.5rem;
+        }
+
+        .denied-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-danger);
+            margin-bottom: 0.5rem;
+        }
+
+        .denied-text {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            max-width: 400px;
+        }
+
+        .current-email {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .logout-denied-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.875rem 1.5rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: var(--transition);
+        }
+
+        .logout-denied-btn:hover {
+            background: var(--accent-danger);
+            border-color: var(--accent-danger);
+        }
+
+        /* Admin Dashboard */
+        .admin-dashboard {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .admin-dashboard.show {
+            display: block;
+        }
+
+        /* Admin Header */
+        .admin-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .admin-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .admin-logo {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .admin-title-group h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 208, 132, 0.15);
+            color: var(--accent-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.625rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        .admin-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .admin-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .user-email {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .logout-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            background: var(--accent-danger);
+            border-color: var(--accent-danger);
+        }
+
+        /* Admin Layout */
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Sidebar */
+        .admin-sidebar {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            padding: 0.875rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .sidebar-link.active {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .sidebar-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 1.5rem 0;
+        }
+
+        .sidebar-section {
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+            padding-left: 1rem;
+        }
+
+        /* Main Content */
+        .admin-main {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: var(--accent-secondary);
+        }
+
+        .stat-icon.green {
+            background: rgba(0, 208, 132, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .stat-icon.orange {
+            background: rgba(255, 165, 2, 0.15);
+            color: var(--accent-warning);
+        }
+
+        .stat-icon.red {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-top: 0.25rem;
+        }
+
+        /* Content Cards */
+        .content-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .input-group .form-input {
+            flex: 1;
+        }
+
+        .input-action {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.875rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.875rem;
+            white-space: nowrap;
+            transition: var(--transition);
+        }
+
+        .input-action:hover {
+            background: var(--accent-secondary);
+            border-color: var(--accent-secondary);
+        }
+
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        .form-hint a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        /* Toggle Switch */
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-group:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-info h4 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .toggle-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            background: var(--bg-hover);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-primary);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: var(--transition);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--accent-secondary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-success {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #00b894;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+        }
+
+        .btn-danger {
+            background: var(--accent-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ee3842;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        .status-message.show {
+            display: flex;
+        }
+
+        .status-message.success {
+            background: rgba(0, 208, 132, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .status-message.error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+        }
+
+        .status-message.warning {
+            background: rgba(255, 165, 2, 0.1);
+            border: 1px solid var(--accent-warning);
+            color: var(--accent-warning);
+        }
+
+        /* API Status Indicator */
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .api-status.connected {
+            background: rgba(0, 208, 132, 0.15);
+            color: var(--accent-primary);
+        }
+
+        .api-status.error {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--accent-danger);
+        }
+
+        .api-status i {
+            font-size: 0.5rem;
+        }
+
+        .api-status.connected i {
+            animation: pulse 2s infinite;
+        }
+
+        /* Ad Preview */
+        .ad-preview {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .ad-preview-label {
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .ad-preview-size {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-sidebar {
+                display: none;
+                position: fixed;
+                top: 80px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 99;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .admin-sidebar.show {
+                display: block;
+            }
+
+            .mobile-menu-toggle {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 2rem;
+            }
+
+            .admin-header {
+                padding: 1rem;
+            }
+
+            .admin-actions {
+                gap: 1rem;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .admin-main {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Utility Classes */
+        .text-success { color: var(--accent-primary); }
+        .text-danger { color: var(--accent-danger); }
+        .text-warning { color: var(--accent-warning); }
+        .text-secondary { color: var(--text-secondary); }
+        
+        .mb-0 { margin-bottom: 0; }
+        .mt-2 { margin-top: 1rem; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-logo">🏏</div>
+            <h1 class="login-title">Admin Dashboard</h1>
+            <p class="login-subtitle">Secure access required</p>
+            
+            <div class="authorized-email">
+                <i class="fas fa-shield-alt"></i>
+                Authorized Email Only
+                <strong>mohidraja139@gmail.com</strong>
+            </div>
+            
+            <button class="google-btn" id="googleLoginBtn">
+                <i class="fab fa-google"></i>
+                Sign in with Google
+            </button>
+            
+            <div class="login-error" id="loginError">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Access Denied</strong>
+                    <p style="font-size: 0.75rem; margin-top: 0.25rem;">Only mohidraja139@gmail.com is authorized.</p>
+                </div>
+            </div>
+            
+            <div class="security-note">
+                <i class="fas fa-lock"></i>
+                This admin panel is protected by Firebase Authentication. All login attempts are logged.
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Denied Screen -->
+    <div class="access-denied" id="accessDenied">
+        <div>
+            <div class="denied-icon">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h2 class="denied-title">Access Denied</h2>
+            <p class="denied-text">You are not authorized to access this admin panel. Please contact the administrator if you believe this is an error.</p>
+            <div class="current-email" id="deniedEmail">Logged in as: unknown</div>
+            <button class="logout-denied-btn" id="logoutDeniedBtn">
+                <i class="fas fa-sign-out-alt"></i> Sign Out & Return
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-brand">
+                <div class="admin-logo">🏏</div>
+                <div class="admin-title-group">
+                    <h1>CricLive Pro</h1>
+                    <span class="admin-badge">
+                        <i class="fas fa-shield-alt"></i> Secure Admin
+                    </span>
+                </div>
+            </div>
+            
+            <div class="admin-actions">
+                <div class="admin-user">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">Admin</div>
+                        <div class="user-email" id="userEmail">mohidraja139@gmail.com</div>
+                    </div>
+                </div>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Layout -->
+        <div class="admin-layout">
+            <!-- Sidebar -->
+            <aside class="admin-sidebar" id="adminSidebar">
+                <nav>
+                    <ul class="sidebar-nav">
+                        <li class="sidebar-item">
+                            <button class="sidebar-link active" data-section="dashboard">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </button>
+                        </li>
+                        <li class="sidebar-item">
+                            <button class="sidebar-link" data-section="api">
+                                <i class="fas fa-key"></i> API Settings
+                            </button>
+                        </li>
+                        
+                        <div class="sidebar-divider"></div>
+                        <div class="sidebar-section">Monetization</div>
+                        
+                        <li class="sidebar-item">
+                            <button class="sidebar-link" data-section="ads">
+                                <i class="fas fa-ad"></i> AdSense Setup
+                            </button>
+                        </li>
+                        
+                        <div class="sidebar-divider"></div>
+                        <div class="sidebar-section">Configuration</div>
+                        
+                        <li class="sidebar-item">
+                            <button class="sidebar-link" data-section="refresh">
+                                <i class="fas fa-sync-alt"></i> Auto Refresh
+                            </button>
+                        </li>
+                        <li class="sidebar-item">
+                            <button class="sidebar-link" data-section="notifications">
+                                <i class="fas fa-bell"></i> Notifications
+                            </button>
+                        </li>
+                        <li class="sidebar-item">
+                            <button class="sidebar-link" data-section="tournaments">
+                                <i class="fas fa-trophy"></i> Tournaments
+                            </button>
+                        </li>
+                        
+                        <div class="sidebar-divider"></div>
+                        
+                        <li class="sidebar-item">
+                            <a href="index.html" class="sidebar-link">
+                                <i class="fas fa-external-link-alt"></i> View Website
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="admin-main">
+                <!-- Dashboard Section -->
+                <section class="admin-section active" id="dashboardSection">
+                    <div class="section-header">
+                        <h2 class="section-title">Dashboard Overview</h2>
+                        <p class="section-subtitle">Real-time system status and analytics</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon green">
+                                    <i class="fas fa-play-circle"></i>
+                                </div>
+                                <div class="stat-label">Live Matches</div>
+                            </div>
+                            <div class="stat-value" id="liveCount">0</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon blue">
+                                    <i class="fas fa-calendar"></i>
+                                </div>
+                                <div class="stat-label">Upcoming</div>
+                            </div>
+                            <div class="stat-value" id="upcomingCount">0</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon orange">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                            <div class="stat-value" id="completedCount">0</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <div class="stat-icon red">
+                                    <i class="fas fa-sync"></i>
+                                </div>
+                                <div class="stat-label">Refresh Rate</div>
+                            </div>
+                            <div class="stat-value" id="refreshDisplay">5s</div>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">System Status</h3>
+                            <span class="api-status connected" id="apiStatus">
+                                <i class="fas fa-circle"></i> API Connected
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                                <div>
+                                    <div class="text-secondary" style="font-size: 0.75rem; margin-bottom: 0.25rem;">API Provider</div>
+                                    <div style="font-weight: 600;">CricAPI</div>
+                                </div>
+                                <div>
+                                    <div class="text-secondary" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Last Sync</div>
+                                    <div style="font-weight: 600;" id="lastSync">Just now</div>
+                                </div>
+                                <div>
+                                    <div class="text-secondary" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Data Storage</div>
+                                    <div style="font-weight: 600;">LocalStorage + Cloud</div>
+                                </div>
+                                <div>
+                                    <div class="text-secondary" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Admin Access</div>
+                                    <div style="font-weight: 600; color: var(--accent-primary);">
+                                        <i class="fas fa-lock"></i> Secured
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- API Settings Section -->
+                <section class="admin-section" id="apiSection">
+                    <div class="section-header">
+                        <h2 class="section-title">API Configuration</h2>
+                        <p class="section-subtitle">Manage your CricAPI connection</p>
+                    </div>
+
+                    <div class="status-message success" id="apiSuccess">
+                        <i class="fas fa-check-circle"></i> API settings saved successfully!
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">CricAPI Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-input" id="apiKeyInput" placeholder="Enter your CricAPI key">
+                                    <button class="input-action" id="toggleApiKey">
+                                        <i class="fas fa-eye"></i> Show
+                                    </button>
+                                </div>
+                                <p class="form-hint">
+                                    Get your API key from <a href="https://cricapi.com" target="_blank">cricapi.com</a>. 
+                                    Current key: <span id="currentKeyMask">••••••••••••••••</span>
+                                </p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Base URL</label>
+                                <input type="text" class="form-input" id="baseUrlInput" value="https://api.cricapi.com/v1" readonly>
+                                <p class="form-hint">Default CricAPI endpoint (read-only)</p>
+                            </div>
+
+                            <div class="btn-group">
+                                <button class="btn btn-primary" id="saveApiBtn">
+                                    <i class="fas fa-save"></i> Save API Key
+                                </button>
+                                <button class="btn btn-secondary" id="testApiBtn">
+                                    <i class="fas fa-vial"></i> Test Connection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AdSense Section -->
+                <section class="admin-section" id="adsSection">
+                    <div class="section-header">
+                        <h2 class="section-title">Google AdSense</h2>
+                        <p class="section-subtitle">Configure advertisement placements</p>
+                    </div>
+
+                    <div class="status-message success" id="adsSuccess">
+                        <i class="fas fa-check-circle"></i> Ad settings saved successfully!
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">AdSense Configuration</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Publisher ID (ca-pub-XXXXXXXXXXXXXXXX)</label>
+                                <input type="text" class="form-input" id="adsClientInput" placeholder="ca-pub-XXXXXXXXXXXXXXXX">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Ad Slot IDs</label>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Header Banner</label>
+                                        <input type="text" class="form-input" id="adSlotHeader" placeholder="Slot ID">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Sidebar</label>
+                                        <input type="text" class="form-input" id="adSlotSidebar" placeholder="Slot ID">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Between Matches</label>
+                                        <input type="text" class="form-input" id="adSlotInline" placeholder="Slot ID">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem; display: block;">Footer</label>
+                                        <input type="text" class="form-input" id="adSlotFooter" placeholder="Slot ID">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Custom Ad Code (Optional)</label>
+                                <textarea class="form-textarea" id="customAdCode" placeholder="Paste custom AdSense code here if needed..."></textarea>
+                            </div>
+
+                            <button class="btn btn-primary" id="saveAdsBtn">
+                                <i class="fas fa-save"></i> Save Ad Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Ad Preview</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="ad-preview">
+                                <div class="ad-preview-label">Advertisement</div>
+                                <div class="ad-preview-size">728x90 / 320x100 (Responsive)</div>
+                            </div>
+                            <p class="form-hint">Ads will appear on all pages once configured. Make sure to replace the placeholder ca-pub ID in your HTML files.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Refresh Settings Section -->
+                <section class="admin-section" id="refreshSection">
+                    <div class="section-header">
+                        <h2 class="section-title">Auto Refresh Settings</h2>
+                        <p class="section-subtitle">Control live score update frequency</p>
+                    </div>
+
+                    <div class="status-message success" id="refreshSuccess">
+                        <i class="fas fa-check-circle"></i> Refresh settings saved!
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Refresh Interval</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Update Frequency (seconds)</label>
+                                <select class="form-select" id="refreshIntervalInput">
+                                    <option value="5000">5 seconds (Fastest - Recommended)</option>
+                                    <option value="10000">10 seconds</option>
+                                    <option value="30000">30 seconds</option>
+                                    <option value="60000">1 minute</option>
+                                </select>
+                                <p class="form-hint">Lower values = more real-time but higher API usage. 5 seconds recommended for best experience.</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">API Rate Limit Protection</label>
+                                <div class="toggle-group">
+                                    <div class="toggle-info">
+                                        <h4>Smart Throttling</h4>
+                                        <p>Automatically slow down if API limit approached</p>
+                                    </div>
+                                    <div class="toggle-switch active" id="throttleToggle">
+                                        <div class="toggle-slider"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" id="saveRefreshBtn">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Notifications Section -->
+                <section class="admin-section" id="notificationsSection">
+                    <div class="section-header">
+                        <h2 class="section-title">Live Notifications</h2>
+                        <p class="section-subtitle">Configure real-time match alerts</p>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Notification Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Browser Notifications</h4>
+                                    <p>Show popup alerts for wickets, sixes, fours</p>
+                                </div>
+                                <div class="toggle-switch active" id="browserNotifToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Wicket Alerts</h4>
+                                    <p>Instant notification when wicket falls</p>
+                                </div>
+                                <div class="toggle-switch active" id="wicketToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Sixes & Fours</h4>
+                                    <p>Boundary notifications</p>
+                                </div>
+                                <div class="toggle-switch active" id="boundaryToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Match Start/End</h4>
+                                    <p>Notifications for match events</p>
+                                </div>
+                                <div class="toggle-switch" id="matchEventToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary mt-2" id="saveNotifBtn">
+                                <i class="fas fa-save"></i> Save Notification Settings
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tournaments Section -->
+                <section class="admin-section" id="tournamentsSection">
+                    <div class="section-header">
+                        <h2 class="section-title">Tournament Management</h2>
+                        <p class="section-subtitle">Configure featured tournaments</p>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Auto-Detect Tournaments</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>ICC Events</h4>
+                                    <p>World Cup, T20 World Cup, Champions Trophy</p>
+                                </div>
+                                <div class="toggle-switch active" id="iccToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>IPL (Indian Premier League)</h4>
+                                    <p>Auto-detect and feature IPL matches</p>
+                                </div>
+                                <div class="toggle-switch active" id="iplToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Big Bash League (BBL)</h4>
+                                    <p>Australian T20 league</p>
+                                </div>
+                                <div class="toggle-switch active" id="bblToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>PSL (Pakistan Super League)</h4>
+                                    <p>Pakistani T20 league</p>
+                                </div>
+                                <div class="toggle-switch active" id="pslToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-info">
+                                    <h4>Asia Cup</h4>
+                                    <p>Asian continental tournament</p>
+                                </div>
+                                <div class="toggle-switch active" id="asiaToggle">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary mt-2" id="saveTournamentBtn">
+                                <i class="fas fa-save"></i> Save Tournament Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Custom Tournament</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Add Custom Tournament Name</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-input" id="customTournamentInput" placeholder="e.g., County Championship">
+                                    <button class="btn btn-success" id="addTournamentBtn">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="customTournamentsList"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
